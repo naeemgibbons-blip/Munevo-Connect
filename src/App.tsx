@@ -1,32 +1,60 @@
-import { useState } from "react";
-import PropertyChart from "./components/PropertyChart";
-import BusinessChart from "./components/BusinessChart";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import PropertyChart from "./pages/PropertyChart";
+import BusinessChart from "./pages/BusinessChart";
+import AgendaSync from "./pages/admin/AgendaSync";
+import PropertyDispositions from "./pages/PropertyDispositions";
+import DepartmentBudgets from "./pages/DepartmentBudgets";
+
+function Nav() {
+  return (
+    <div className="flex items-center gap-2 bg-slate-800 px-4 py-1.5 text-xs">
+      <Link
+        to="/property-chart"
+        className="px-2 py-1 rounded text-slate-300 hover:text-white"
+      >
+        Property Chart
+      </Link>
+      <Link
+        to="/business-chart"
+        className="px-2 py-1 rounded text-slate-300 hover:text-white"
+      >
+        Business Chart
+      </Link>
+      <Link
+        to="/admin/agenda-sync"
+        className="px-2 py-1 rounded text-slate-300 hover:text-white"
+      >
+        Agenda Sync
+      </Link>
+      <Link
+        to="/property-dispositions"
+        className="px-2 py-1 rounded text-slate-300 hover:text-white"
+      >
+        Property Dispositions
+      </Link>
+      <Link
+        to="/department-budgets"
+        className="px-2 py-1 rounded text-slate-300 hover:text-white"
+      >
+        Department Budgets
+      </Link>
+    </div>
+  );
+}
 
 function App() {
-  const [screen, setScreen] = useState<"property" | "business">("property");
-
   return (
-    <div>
-      <div className="flex items-center gap-2 bg-slate-800 px-4 py-1.5 text-xs">
-        <button
-          onClick={() => setScreen("property")}
-          className={`px-2 py-1 rounded ${
-            screen === "property" ? "bg-blue-600 text-white" : "text-slate-300 hover:text-white"
-          }`}
-        >
-          Property Chart
-        </button>
-        <button
-          onClick={() => setScreen("business")}
-          className={`px-2 py-1 rounded ${
-            screen === "business" ? "bg-blue-600 text-white" : "text-slate-300 hover:text-white"
-          }`}
-        >
-          Business Chart
-        </button>
-      </div>
-      {screen === "property" ? <PropertyChart /> : <BusinessChart />}
-    </div>
+    <BrowserRouter>
+      <Nav />
+      <Routes>
+        <Route path="/" element={<PropertyChart />} />
+        <Route path="/property-chart" element={<PropertyChart />} />
+        <Route path="/business-chart" element={<BusinessChart />} />
+        <Route path="/admin/agenda-sync" element={<AgendaSync />} />
+        <Route path="/property-dispositions" element={<PropertyDispositions />} />
+        <Route path="/department-budgets" element={<DepartmentBudgets />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, DataRow, StatusBadge, ActivityRow } from "./chart-ui";
+import { Card, DataRow, StatusBadge, ActivityRow } from "../components/chart-ui";
 
 type RecordTab = {
   id: string;
@@ -8,54 +8,64 @@ type RecordTab = {
 };
 
 const RECORD_TABS: RecordTab[] = [
-  { id: "business", label: "ABC Construction LLC", icon: "🏢" },
-  { id: "license", label: "License #BL-2024-778", icon: "📄" },
-  { id: "inspection", label: "Inspection #IN-44521", icon: "🔍" },
+  { id: "property", label: "123 Main St", icon: "🏠" },
+  { id: "permit", label: "Permit #24-0156", icon: "📄" },
+  { id: "workorder", label: "WO #24-8891", icon: "🛠️" },
+  { id: "party", label: "Jane Smith", icon: "👤" },
 ];
 
 const SUB_TABS = [
   "Summary",
   "All Records",
-  "Licenses",
   "Permits",
-  "Inspections",
-  "Payments",
+  "311 Requests",
   "Violations",
-  "Health/Food",
+  "Inspections",
+  "Utilities & Bills",
+  "Payments",
+  "Planning/Zoning",
+  "Parties",
   "Documents",
   "Activity",
 ];
 
 const QUICK_ACTIONS = [
   "Create Permit",
-  "Schedule Inspection",
+  "Create 311 Request",
+  "Create Work Order",
   "Add Document",
   "Add Note",
-  "Send Message",
+  "Schedule Inspection",
+  "Add Party",
 ];
 
-function PaymentRow({
+function BillRow({
   label,
-  amount,
-  date,
+  balance,
+  due,
 }: {
   label: string;
-  amount: string;
-  date: string;
+  balance: string;
+  due: string;
 }) {
   return (
     <div className="flex items-center justify-between py-2">
       <div>
         <div className="text-sm font-medium text-slate-800">{label}</div>
-        <div className="text-xs text-slate-500">{date}</div>
+        <div className="text-xs text-slate-500">Due {due}</div>
       </div>
-      <span className="text-sm font-semibold text-slate-800">{amount}</span>
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-semibold text-slate-800">{balance}</span>
+        <button className="text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded">
+          Pay Now
+        </button>
+      </div>
     </div>
   );
 }
 
-export default function BusinessChart() {
-  const [activeRecordTab, setActiveRecordTab] = useState("business");
+export default function PropertyChart() {
+  const [activeRecordTab, setActiveRecordTab] = useState("property");
   const [activeSubTab, setActiveSubTab] = useState("Summary");
   const [openTabs, setOpenTabs] = useState(RECORD_TABS.map((t) => t.id));
 
@@ -65,10 +75,10 @@ export default function BusinessChart() {
 
   return (
     <div className="min-h-screen bg-slate-100 p-4">
-      <div className="max-w-[1600px] mx-auto bg-slate-50 rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+      <div className="max-w-[1400px] mx-auto bg-slate-50 rounded-lg border border-slate-200 overflow-hidden shadow-sm">
         {/* Header bar */}
         <div className="bg-blue-600 text-white px-4 py-2 text-sm font-semibold tracking-wide">
-          BUSINESS CHART (STAFF)
+          PROPERTY CHART (STAFF)
         </div>
 
         {/* Record tab bar */}
@@ -126,27 +136,23 @@ export default function BusinessChart() {
           {/* Left identity rail */}
           <aside className="w-64 shrink-0 flex flex-col gap-4">
             <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-              <div className="h-20 bg-slate-200 flex items-center justify-center text-slate-500 text-2xl font-bold">
-                ABC
+              <div className="h-32 bg-slate-200 flex items-center justify-center text-slate-400 text-xs">
+                Property Photo
               </div>
               <div className="p-3">
-                <div className="text-base font-bold text-slate-900">ABC CONSTRUCTION LLC</div>
-                <div className="text-xs text-slate-500 mb-2">General Contractor</div>
+                <div className="text-base font-bold text-slate-900">123 MAIN ST</div>
+                <div className="text-xs text-slate-500 mb-2">Anytown, MD 21000</div>
                 <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded bg-green-100 text-green-700 mb-2">
                   ACTIVE
                 </span>
-                <div className="text-xs text-slate-500 mt-2">Business ID</div>
-                <div className="text-sm text-slate-800 font-medium mb-1">BUS-2024-0091</div>
-                <div className="text-xs text-slate-500">License Type</div>
-                <div className="text-sm text-slate-800 font-medium mb-1">General Contractor</div>
-                <div className="text-xs text-slate-500">Status</div>
-                <div className="text-sm text-slate-800 font-medium mb-1">Active</div>
-                <div className="text-xs text-slate-500">License Expires</div>
-                <div className="text-sm text-slate-800 font-medium mb-1">12/31/2025</div>
-                <div className="text-xs text-slate-500">Phone</div>
-                <div className="text-sm text-slate-800 font-medium mb-1">(555) 123-4567</div>
-                <div className="text-xs text-slate-500">Email</div>
-                <div className="text-sm text-slate-800 font-medium">contact@abcconstruction.com</div>
+                <div className="text-xs text-slate-500 mt-2">Parcel ID</div>
+                <div className="text-sm text-slate-800 font-medium mb-1">17-000-1234</div>
+                <div className="text-xs text-slate-500">Property Type</div>
+                <div className="text-sm text-slate-800 font-medium mb-1">
+                  Single Family Residential
+                </div>
+                <div className="text-xs text-slate-500">Owner</div>
+                <div className="text-sm text-slate-800 font-medium">JOHN DOE</div>
               </div>
             </div>
 
@@ -169,84 +175,88 @@ export default function BusinessChart() {
               <h4 className="text-xs font-semibold text-slate-500 uppercase mb-2">Alerts</h4>
               <ul className="flex flex-col gap-2 text-sm">
                 <li className="flex items-center gap-2 text-red-600">
-                  <span>⚠️</span> 1 Open Violation
+                  <span>⚠️</span> 2 Open Violations
                 </li>
                 <li className="flex items-center gap-2 text-amber-600">
-                  <span>⚠️</span> Insurance Expires 09/15/2025
+                  <span>⚠️</span> 1 Expired Permit
+                </li>
+                <li className="flex items-center gap-2 text-slate-600">
+                  <span>📅</span> Next Payment Due 06/05/2025
                 </li>
               </ul>
             </div>
           </aside>
 
           {/* Center workspace */}
-          <main className="flex-1 flex flex-col gap-4">
-            <Card title="Business Overview">
-              <DataRow label="Entity Type" value="LLC" />
-              <DataRow label="Owner" value="Robert Johnson" />
-              <DataRow label="Address" value="450 Industrial Pkwy" />
-              <DataRow label="Years in Business" value="8" />
-              <DataRow label="Employees" value="24" />
+          <main className="flex-1 grid grid-cols-2 gap-4 content-start">
+            <Card title="Property Information">
+              <DataRow label="Zoning" value="R-1" />
+              <DataRow label="Lot Size" value="0.25 acres" />
+              <DataRow label="Year Built" value="1998" />
+              <DataRow label="Living Area" value="2,200 sqft" />
+              <DataRow label="Use" value="Single Family" />
             </Card>
 
-            <Card title="Active Licenses" onViewAll={() => {}} viewAllLabel="View all (1)">
-              <div className="text-sm text-slate-800 font-medium">General Contractor License</div>
-              <div className="text-xs text-slate-500 mb-1">License #BL-2024-778</div>
-              <div className="flex items-center justify-between text-xs text-slate-400">
-                <span>Expires 12/31/2025</span>
-                <StatusBadge status="Active" />
-              </div>
-            </Card>
-
-            <Card title="Payments" onViewAll={() => {}} viewAllLabel="View all payments">
-              <PaymentRow label="Annual License Fee" amount="$350.00" date="Paid 05/12/2025" />
-              <PaymentRow label="Permit Fee — Commercial Build-out" amount="$1,200.00" date="Paid 05/04/2025" />
-              <PaymentRow label="Permit Fee — Electrical Upgrade" amount="$480.00" date="Paid 04/18/2025" />
-            </Card>
-          </main>
-
-          {/* Right context panel */}
-          <aside className="w-64 shrink-0 flex flex-col gap-4">
             <Card title="Recent Activity" onViewAll={() => {}}>
               <ActivityRow
-                date="05/12/2025"
-                title="Payment Received"
-                subtitle="Annual License Fee"
-                status="Paid"
+                date="05/10/2025"
+                title="311 Request Created"
+                subtitle="Pothole in driveway"
+                status="Open"
               />
               <ActivityRow
-                date="05/09/2025"
+                date="05/08/2025"
                 title="Inspection Completed"
-                subtitle="Site Safety Inspection"
+                subtitle="Building Final"
                 status="Passed"
               />
               <ActivityRow
-                date="05/04/2025"
+                date="05/05/2025"
                 title="Permit Issued"
-                subtitle="Commercial Build-out"
+                subtitle="Deck Addition"
                 status="Issued"
               />
             </Card>
 
             <Card title="Active Permits" onViewAll={() => {}} viewAllLabel="View all (2)">
-              <div className="text-sm text-slate-800 font-medium">Commercial Build-out</div>
-              <div className="text-xs text-slate-500 mb-1">Permit #P25-000456</div>
+              <div className="text-sm text-slate-800 font-medium">Deck Addition</div>
+              <div className="text-xs text-slate-500 mb-1">Permit #P25-000123</div>
               <div className="flex items-center justify-between text-xs text-slate-400 mb-3">
-                <span>Issued 05/04/2025</span>
+                <span>Issued 05/15/2025</span>
                 <StatusBadge status="In Progress" />
               </div>
-              <div className="text-sm text-slate-800 font-medium">Electrical Upgrade</div>
-              <div className="text-xs text-slate-500 mb-1">Permit #P25-000412</div>
+              <div className="text-sm text-slate-800 font-medium">Shed Installation</div>
+              <div className="text-xs text-slate-500 mb-1">Permit #P25-000110</div>
               <div className="flex items-center justify-between text-xs text-slate-400">
-                <span>Issued 04/18/2025</span>
+                <span>Issued 04/20/2025</span>
                 <StatusBadge status="In Progress" />
               </div>
             </Card>
 
-            <Card title="Upcoming Inspections" onViewAll={() => {}} viewAllLabel="View all inspections">
+            <Card title="Open Violations" onViewAll={() => {}} viewAllLabel="View all (2)">
+              <div className="text-sm text-slate-800 font-medium">Tall grass</div>
+              <div className="flex items-center justify-between text-xs text-slate-400 mb-3">
+                <span>Issued 05/10/2025</span>
+                <StatusBadge status="Open" />
+              </div>
+              <div className="text-sm text-slate-800 font-medium">Trash on property</div>
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>Issued 04/10/2025</span>
+                <StatusBadge status="Open" />
+              </div>
+            </Card>
+
+            <Card title="Utilities & Bills" onViewAll={() => {}} viewAllLabel="View all bills">
+              <BillRow label="Water Balance" balance="$45.62" due="06/05/2025" />
+              <BillRow label="Sewer Balance" balance="$38.10" due="06/05/2025" />
+              <BillRow label="Trash Balance" balance="$22.75" due="06/05/2025" />
+            </Card>
+
+            <Card title="Next Inspection" onViewAll={() => {}} viewAllLabel="View all inspections">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <div className="text-sm font-medium text-slate-800">Site Safety Inspection</div>
-                  <div className="text-xs text-slate-500">Scheduled 06/02/2025</div>
+                  <div className="text-sm font-medium text-slate-800">Deck Final Inspection</div>
+                  <div className="text-xs text-slate-500">Scheduled 06/01/2025</div>
                 </div>
                 <span className="text-xs font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-600">
                   Scheduled
@@ -254,15 +264,15 @@ export default function BusinessChart() {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-medium text-slate-800">Electrical Final Inspection</div>
-                  <div className="text-xs text-slate-500">Scheduled 06/20/2025</div>
+                  <div className="text-sm font-medium text-slate-800">Building Final Inspection</div>
+                  <div className="text-xs text-slate-500">Scheduled 06/15/2025</div>
                 </div>
                 <span className="text-xs font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-600">
                   Scheduled
                 </span>
               </div>
             </Card>
-          </aside>
+          </main>
         </div>
       </div>
     </div>
