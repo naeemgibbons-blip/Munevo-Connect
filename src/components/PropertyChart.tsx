@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { Card, DataRow, StatusBadge, ActivityRow } from "./chart-ui";
 
 type RecordTab = {
@@ -65,6 +66,7 @@ function BillRow({
 }
 
 export default function PropertyChart() {
+  const { id } = useParams<{ id: string }>();
   const [activeRecordTab, setActiveRecordTab] = useState("property");
   const [activeSubTab, setActiveSubTab] = useState("Summary");
   const [openTabs, setOpenTabs] = useState(RECORD_TABS.map((t) => t.id));
@@ -77,8 +79,9 @@ export default function PropertyChart() {
     <div className="min-h-screen bg-slate-100 p-4">
       <div className="max-w-[1400px] mx-auto bg-slate-50 rounded-lg border border-slate-200 overflow-hidden shadow-sm">
         {/* Header bar */}
-        <div className="bg-blue-600 text-white px-4 py-2 text-sm font-semibold tracking-wide">
-          PROPERTY CHART (STAFF)
+        <div className="bg-blue-600 text-white px-4 py-2 text-sm font-semibold tracking-wide flex items-center justify-between">
+          <span>PROPERTY CHART (STAFF)</span>
+          {id && <span className="text-xs font-normal text-blue-100">Record ID: {id}</span>}
         </div>
 
         {/* Record tab bar */}
