@@ -15,6 +15,7 @@ const RECORD_TABS: RecordTab[] = [
 
 const SUB_TABS = [
   "Summary",
+  "All Records",
   "Licenses",
   "Permits",
   "Inspections",
@@ -49,21 +50,6 @@ function PaymentRow({
         <div className="text-xs text-slate-500">{date}</div>
       </div>
       <span className="text-sm font-semibold text-slate-800">{amount}</span>
-    </div>
-  );
-}
-
-function ContextSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-3">
-      <h4 className="text-xs font-semibold text-slate-500 uppercase mb-2">{title}</h4>
-      {children}
     </div>
   );
 }
@@ -193,7 +179,7 @@ export default function BusinessChart() {
           </aside>
 
           {/* Center workspace */}
-          <main className="flex-1 grid grid-cols-2 gap-4 content-start">
+          <main className="flex-1 flex flex-col gap-4">
             <Card title="Business Overview">
               <DataRow label="Entity Type" value="LLC" />
               <DataRow label="Owner" value="Robert Johnson" />
@@ -202,6 +188,24 @@ export default function BusinessChart() {
               <DataRow label="Employees" value="24" />
             </Card>
 
+            <Card title="Active Licenses" onViewAll={() => {}} viewAllLabel="View all (1)">
+              <div className="text-sm text-slate-800 font-medium">General Contractor License</div>
+              <div className="text-xs text-slate-500 mb-1">License #BL-2024-778</div>
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>Expires 12/31/2025</span>
+                <StatusBadge status="Active" />
+              </div>
+            </Card>
+
+            <Card title="Payments" onViewAll={() => {}} viewAllLabel="View all payments">
+              <PaymentRow label="Annual License Fee" amount="$350.00" date="Paid 05/12/2025" />
+              <PaymentRow label="Permit Fee — Commercial Build-out" amount="$1,200.00" date="Paid 05/04/2025" />
+              <PaymentRow label="Permit Fee — Electrical Upgrade" amount="$480.00" date="Paid 04/18/2025" />
+            </Card>
+          </main>
+
+          {/* Right context panel */}
+          <aside className="w-64 shrink-0 flex flex-col gap-4">
             <Card title="Recent Activity" onViewAll={() => {}}>
               <ActivityRow
                 date="05/12/2025"
@@ -221,15 +225,6 @@ export default function BusinessChart() {
                 subtitle="Commercial Build-out"
                 status="Issued"
               />
-            </Card>
-
-            <Card title="Active Licenses" onViewAll={() => {}} viewAllLabel="View all (1)">
-              <div className="text-sm text-slate-800 font-medium">General Contractor License</div>
-              <div className="text-xs text-slate-500 mb-1">License #BL-2024-778</div>
-              <div className="flex items-center justify-between text-xs text-slate-400">
-                <span>Expires 12/31/2025</span>
-                <StatusBadge status="Active" />
-              </div>
             </Card>
 
             <Card title="Active Permits" onViewAll={() => {}} viewAllLabel="View all (2)">
@@ -267,62 +262,6 @@ export default function BusinessChart() {
                 </span>
               </div>
             </Card>
-
-            <Card title="Payments" onViewAll={() => {}} viewAllLabel="View all payments">
-              <PaymentRow label="Annual License Fee" amount="$350.00" date="Paid 05/12/2025" />
-              <PaymentRow label="Permit Fee — Commercial Build-out" amount="$1,200.00" date="Paid 05/04/2025" />
-              <PaymentRow label="Permit Fee — Electrical Upgrade" amount="$480.00" date="Paid 04/18/2025" />
-            </Card>
-          </main>
-
-          {/* Right context panel */}
-          <aside className="w-64 shrink-0 flex flex-col gap-4">
-            <ContextSection title="Actions">
-              <ul className="flex flex-col gap-1.5">
-                <li>
-                  <button className="text-sm text-blue-600 hover:text-blue-700 hover:underline text-left">
-                    Renew License
-                  </button>
-                </li>
-                <li>
-                  <button className="text-sm text-blue-600 hover:text-blue-700 hover:underline text-left">
-                    Flag for Review
-                  </button>
-                </li>
-                <li>
-                  <button className="text-sm text-blue-600 hover:text-blue-700 hover:underline text-left">
-                    Generate Report
-                  </button>
-                </li>
-              </ul>
-            </ContextSection>
-
-            <ContextSection title="Tasks">
-              <ul className="flex flex-col gap-2 text-sm">
-                <li className="flex items-center justify-between">
-                  <span className="text-slate-700">Verify insurance renewal</span>
-                  <span className="text-xs text-slate-400">06/01</span>
-                </li>
-                <li className="flex items-center justify-between">
-                  <span className="text-slate-700">Follow up on violation</span>
-                  <span className="text-xs text-slate-400">05/30</span>
-                </li>
-              </ul>
-            </ContextSection>
-
-            <ContextSection title="Messages">
-              <div className="text-sm text-slate-700">
-                <div className="font-medium">Robert Johnson</div>
-                <div className="text-xs text-slate-500">"Submitted updated insurance docs."</div>
-              </div>
-            </ContextSection>
-
-            <ContextSection title="AI Insights">
-              <ul className="flex flex-col gap-2 text-sm text-slate-700">
-                <li>⚡ License renewal due in 30 days</li>
-                <li>⚡ No prior violations before this case</li>
-              </ul>
-            </ContextSection>
           </aside>
         </div>
       </div>
