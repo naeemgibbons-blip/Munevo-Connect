@@ -1,52 +1,8 @@
--- Legistar agenda sync: organizations/profiles scaffolding, departments,
--- and the legistar_matters / property_dispositions / grants / grant_transactions
--- tables, all scoped to org_id via current_org_id().
+-- Legistar agenda sync: legistar_matters / property_dispositions tables, plus
+-- link columns on the existing grants module, all scoped to org_id via the
+-- app's existing my_org() / has_permission() conventions.
 
 create extension if not exists "pgcrypto";
-
-create table if not exists organizations (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  created_at timestamptz not null default now()
-);
-
-create table if not exists profiles (
-  id uuid primary key references auth.users (id) on delete cascade,
-  org_id uuid not null references organizations (id) on delete cascade,
-  role text not null check (role in ('admin', 'executive', 'staff', 'supervisor')),
-  created_at timestamptz not null default now()
-);
-
-create or replace function current_org_id()
-returns uuid
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select org_id from profiles where id = auth.uid()
-$$;
-
-create or replace function current_user_role()
-returns text
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select role from profiles where id = auth.uid()
-$$;
-
-create table if not exists departments (
-  id uuid primary key default gen_random_uuid(),
-  org_id uuid not null references organizations (id) on delete cascade,
-  name text not null,
-  created_at timestamptz not null default now(),
-  unique (org_id, name)
-);
-
-create unique index if not exists departments_org_name_lower_idx
-  on departments (org_id, lower(name));
 
 create table if not exists legistar_matters (
   id uuid primary key default gen_random_uuid(),
@@ -81,74 +37,54 @@ create table if not exists property_dispositions (
   created_at timestamptz not null default now()
 );
 
-create table if not exists grants (
-  id uuid primary key default gen_random_uuid(),
-  org_id uuid not null references organizations (id) on delete cascade,
-  legistar_matter_id uuid unique references legistar_matters (id) on delete cascade,
-  department_id uuid references departments (id),
-  entity_name text,
-  purpose text,
-  funding_source text,
-  grant_period text,
-  total_amount numeric,
-  created_at timestamptz not null default now()
-);
-
-create table if not exists grant_transactions (
-  id uuid primary key default gen_random_uuid(),
-  org_id uuid not null references organizations (id) on delete cascade,
-  grant_id uuid not null references grants (id) on delete cascade,
-  amount numeric not null,
-  description text,
-  recorded_by uuid references auth.users (id),
-  created_at timestamptz not null default now()
-);
+-- Link Legistar-sourced grants into the existing grants module instead of
+-- maintaining a parallel table.
+alter table grants add column if not exists legistar_matter_id uuid
+  unique references legistar_matters (id) on delete set null;
+alter table grants add column if not exists department_id uuid
+  references departments (id);
 
 alter table legistar_matters enable row level security;
 alter table property_dispositions enable row level security;
-alter table grants enable row level security;
-alter table grant_transactions enable row level security;
 
-create policy "legistar_matters_org_access" on legistar_matters
-  for all
+create policy "legistar_matters_read" on legistar_matters
+  for select
   using (
-    org_id = current_org_id()
-    and current_user_role() in ('admin', 'executive', 'staff', 'supervisor')
-  )
-  with check (
-    org_id = current_org_id()
-    and current_user_role() in ('admin', 'executive', 'staff', 'supervisor')
+    org_id = my_org()
+    and has_permission(auth.uid(), 'legislative', 'view', department_id, null)
   );
 
-create policy "property_dispositions_org_access" on property_dispositions
-  for all
-  using (
-    org_id = current_org_id()
-    and current_user_role() in ('admin', 'executive', 'staff', 'supervisor')
-  )
+create policy "legistar_matters_write" on legistar_matters
+  for insert
   with check (
-    org_id = current_org_id()
-    and current_user_role() in ('admin', 'executive', 'staff', 'supervisor')
+    org_id = my_org()
+    and has_permission(auth.uid(), 'legislative', 'create', department_id, null)
   );
 
-create policy "grants_org_access" on grants
-  for all
+create policy "legistar_matters_update" on legistar_matters
+  for update
   using (
-    org_id = current_org_id()
-    and current_user_role() in ('admin', 'executive', 'staff', 'supervisor')
-  )
-  with check (
-    org_id = current_org_id()
-    and current_user_role() in ('admin', 'executive', 'staff', 'supervisor')
+    org_id = my_org()
+    and has_permission(auth.uid(), 'legislative', 'edit', department_id, null)
   );
 
-create policy "grant_transactions_org_access" on grant_transactions
-  for all
+create policy "property_dispositions_read" on property_dispositions
+  for select
   using (
-    org_id = current_org_id()
-    and current_user_role() in ('admin', 'executive', 'staff', 'supervisor')
-  )
+    org_id = my_org()
+    and has_permission(auth.uid(), 'legislative', 'view', department_id, null)
+  );
+
+create policy "property_dispositions_write" on property_dispositions
+  for insert
   with check (
-    org_id = current_org_id()
-    and current_user_role() in ('admin', 'executive', 'staff', 'supervisor')
+    org_id = my_org()
+    and has_permission(auth.uid(), 'legislative', 'create', department_id, null)
+  );
+
+create policy "property_dispositions_update" on property_dispositions
+  for update
+  using (
+    org_id = my_org()
+    and has_permission(auth.uid(), 'legislative', 'edit', department_id, null)
   );

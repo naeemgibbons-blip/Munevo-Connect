@@ -57,18 +57,15 @@ export default function DepartmentBudgets() {
 
     setSubmitting(true);
     const { data: userData } = await supabase.auth.getUser();
-    const { data: grant } = await supabase
-      .from("grants")
-      .select("org_id")
-      .eq("id", expenseGrantId)
-      .single();
 
     await supabase.from("grant_transactions").insert({
-      org_id: grant?.org_id,
       grant_id: expenseGrantId,
+      type: "expense",
       amount,
-      description: expenseDescription || null,
-      recorded_by: userData.user?.id ?? null,
+      category: expenseDescription || null,
+      status: "Posted",
+      date: new Date().toISOString().slice(0, 10),
+      created_by: userData.user?.id ?? null,
     });
 
     setExpenseAmount("");
@@ -96,7 +93,7 @@ export default function DepartmentBudgets() {
               </div>
               <div className="p-4 flex flex-col gap-4">
                 {deptGrants.map((grant) => {
-                  const total = Number(grant.total_amount ?? 0);
+                  const total = Number(grant.amount ?? 0);
                   const spent = spentByGrant(grant.id);
                   const remaining = total - spent;
                   const pct = total > 0 ? Math.min(100, (spent / total) * 100) : 0;
@@ -105,9 +102,9 @@ export default function DepartmentBudgets() {
                     <div key={grant.id} className="border border-slate-100 rounded-lg p-3">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium text-slate-800">
-                          {grant.purpose ?? grant.entity_name ?? "Grant"}
+                          {grant.title}
                         </span>
-                        <span className="text-xs text-slate-500">{grant.entity_name}</span>
+                        <span className="text-xs text-slate-500">{grant.funder}</span>
                       </div>
 
                       <div className="h-2 bg-slate-100 rounded overflow-hidden mb-2">
@@ -142,7 +139,7 @@ export default function DepartmentBudgets() {
               <option value="">Select a grant…</option>
               {grantList.map((g) => (
                 <option key={g.id} value={g.id}>
-                  {g.purpose ?? g.entity_name ?? g.id}
+                  {g.title}
                 </option>
               ))}
             </select>

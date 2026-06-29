@@ -41,24 +41,32 @@ export type PropertyDisposition = {
 
 export type Grant = {
   id: string;
-  org_id: string;
+  org_id: string | null;
   legistar_matter_id: string | null;
   department_id: string | null;
-  entity_name: string | null;
-  purpose: string | null;
-  funding_source: string | null;
-  grant_period: string | null;
-  total_amount: number | null;
+  title: string;
+  funder: string;
+  source: string;
+  cfda_number: string | null;
+  amount: number;
+  status: string;
+  owner_id: string | null;
+  deadline: string | null;
+  program_id: string | null;
   created_at: string;
 };
 
 export type GrantTransaction = {
   id: string;
-  org_id: string;
-  grant_id: string;
+  grant_id: string | null;
+  type: string;
+  vendor: string | null;
   amount: number;
-  description: string | null;
-  recorded_by: string | null;
+  category: string | null;
+  gl_ref: string | null;
+  status: string;
+  date: string;
+  created_by: string | null;
   created_at: string;
 };
 

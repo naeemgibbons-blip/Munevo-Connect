@@ -191,11 +191,11 @@ Deno.serve(async (req) => {
           org_id: orgId,
           legistar_matter_id: upsertedMatter.id,
           department_id: departmentId,
-          entity_name: parsed.fields["Entity Name/Address"] ?? null,
-          purpose: parsed.fields["Purpose"] ?? null,
-          funding_source: parsed.fields["Funding Source"] ?? null,
-          grant_period: parsed.fields["Contract/Grant Period"] ?? null,
-          total_amount: parseAmount(parsed.fields["Total Grant Amount"]),
+          title: parsed.fields["Purpose"] || matter.MatterTitle,
+          funder: parsed.fields["Entity Name/Address"] || "Unknown",
+          source: parsed.fields["Funding Source"] || "Unknown",
+          amount: parseAmount(parsed.fields["Total Grant Amount"]) ?? 0,
+          status: "Identified",
         },
         { onConflict: "legistar_matter_id" }
       );
