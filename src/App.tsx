@@ -5,6 +5,7 @@ import AgendaSync from "./pages/admin/AgendaSync";
 import PropertyDispositions from "./pages/PropertyDispositions";
 import DepartmentBudgets from "./pages/DepartmentBudgets";
 import LegislativePortal from "./pages/LegislativePortal";
+import GISReview from "./pages/GISReview";
 
 function Nav() {
   return (
@@ -45,6 +46,12 @@ function Nav() {
       >
         Legislative Portal
       </Link>
+      <Link
+        to="/gis-review"
+        className="px-2 py-1 rounded text-slate-300 hover:text-white"
+      >
+        GIS Review
+      </Link>
     </div>
   );
 }
@@ -61,6 +68,7 @@ function App() {
         <Route path="/property-dispositions" element={<PropertyDispositions />} />
         <Route path="/department-budgets" element={<DepartmentBudgets />} />
         <Route path="/legislative-portal" element={<LegislativePortal />} />
+        <Route path="/gis-review" element={<GISReview />} />
       </Routes>
     </BrowserRouter>
   );

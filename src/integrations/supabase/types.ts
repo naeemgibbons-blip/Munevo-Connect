@@ -10,27 +10,52 @@ export type Department = {
 
 export type LegistarMatter = {
   id: string;
-  org_id: string;
-  matter_id: number;
-  matter_file: string | null;
-  matter_title: string | null;
-  matter_type: string | null;
-  matter_status: string | null;
+  org_id?: string;
+  matter_id?: number;
+  matter_file?: string | null;
+  matter_title?: string | null;
+  matter_type?: string | null;
+  matter_status?: string | null;
+  department_id?: string | null;
+  parsed_fields?: Record<string, string> | null;
+  classification?: "grant" | "property_disposition" | "other";
+  synced_at?: string;
+  matter_category?: "PROCEDURAL" | "HEADER" | "ACTIONABLE" | null;
+  action_type?: string | null;
+  resolution_number?: string | null;
+  ordinance_number?: string | null;
+  funding_source_parsed?: string | null;
+  meeting_body?: string | null;
+  extracted_addresses?: string[] | null;
+  extracted_businesses?: string[] | null;
+  extracted_contractors?: string[] | null;
+  extracted_parcels?: string[] | null;
+  extracted_amounts?: string[] | null;
+};
+
+export type GISRecord = {
+  id: string;
+  org_id: string | null;
+  source_module: string;
+  record_type: string;
+  related_record_id: string | null;
+  raw_address: string;
+  normalized_address: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  parcel_id: string | null;
+  ward: string | null;
+  neighborhood: string | null;
+  council_district: string | null;
   department_id: string | null;
-  parsed_fields: Record<string, string> | null;
-  classification: "grant" | "property_disposition" | "other";
-  synced_at: string;
-  matter_category: "PROCEDURAL" | "HEADER" | "ACTIONABLE" | null;
-  action_type: string | null;
-  resolution_number: string | null;
-  ordinance_number: string | null;
-  funding_source_parsed: string | null;
-  meeting_body: string | null;
-  extracted_addresses: string[] | null;
-  extracted_businesses: string[] | null;
-  extracted_contractors: string[] | null;
-  extracted_parcels: string[] | null;
-  extracted_amounts: string[] | null;
+  geocode_status: string;
+  confidence: string | null;
+  geocoded_at: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type LegistarMatterLink = {

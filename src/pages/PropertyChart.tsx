@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { Card, DataRow, StatusBadge, ActivityRow } from "../components/chart-ui";
 import { supabase } from "../integrations/supabase/client";
 import type { LegistarMatter } from "../integrations/supabase/types";
+import type { GISMarker } from "../components/GISMap";
+
+const GISMap = lazy(() => import("../components/GISMap"));
 
 type RecordTab = {
   id: string;
@@ -18,6 +21,7 @@ const RECORD_TABS: RecordTab[] = [
 
 const SUB_TABS = [
   "Summary",
+  "GIS Map",
   "All Records",
   "Permits",
   "311 Requests",
@@ -106,6 +110,85 @@ function PendingCouncilActions({ address }: { address: string }) {
         ))}
       </div>
     </Card>
+  );
+}
+
+function PropertyGISTab({ address }: { address: string }) {
+  const [markers, setMarkers] = useState<GISMarker[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("gis_records")
+      .select("id, record_type, latitude, longitude, raw_address, normalized_address, source_module, related_record_id")
+      .not("latitude", "is", null)
+      .ilike("raw_address", `%${address.split(",")[0]}%`)
+      .limit(50)
+      .then(({ data }) => {
+        setMarkers(
+          (data ?? []).map((r) => ({
+            id: r.id,
+            record_type: r.record_type,
+            latitude: r.latitude!,
+            longitude: r.longitude!,
+            raw_address: r.raw_address,
+            normalized_address: r.normalized_address,
+            source_module: r.source_module,
+            related_record_id: r.related_record_id,
+          }))
+        );
+        setLoading(false);
+      });
+  }, [address]);
+
+  const TYPE_COLORS: Record<string, string> = {
+    "311_request": "#3B82F6", permit: "#10B981", inspection: "#8B5CF6",
+    violation: "#EF4444", work_order: "#F97316", project: "#14B8A6",
+    legislative_action: "#F59E0B", business: "#6366F1", utility_account: "#64748B",
+  };
+
+  const TYPE_LABELS: Record<string, string> = {
+    "311_request": "311 Request", permit: "Permit", inspection: "Inspection",
+    violation: "Violation", work_order: "Work Order", project: "Project",
+    legislative_action: "Legislative Action", business: "Business",
+    utility_account: "Utility Account",
+  };
+
+  if (loading) return <p className="text-sm text-slate-500 py-4">Loading map…</p>;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Suspense fallback={<div className="h-64 bg-slate-100 rounded animate-pulse" />}>
+        <GISMap markers={markers} height="360px" />
+      </Suspense>
+
+      {markers.length === 0 && (
+        <p className="text-xs text-slate-500">
+          No geocoded records found for this address. GIS markers appear automatically
+          when address-bearing records are created.
+        </p>
+      )}
+
+      {markers.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <h3 className="text-xs font-semibold text-slate-500 uppercase">
+            {markers.length} Related Record{markers.length !== 1 ? "s" : ""}
+          </h3>
+          {markers.map((m) => (
+            <div key={m.id} className="flex items-center gap-2 text-xs">
+              <div
+                className="w-3 h-3 rounded-full shrink-0 border border-white shadow-sm"
+                style={{ background: TYPE_COLORS[m.record_type] ?? "#64748B" }}
+              />
+              <span className="font-medium text-slate-700">
+                {TYPE_LABELS[m.record_type] ?? m.record_type}
+              </span>
+              <span className="text-slate-400 truncate">{m.raw_address}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -233,7 +316,12 @@ export default function PropertyChart() {
           </aside>
 
           {/* Center workspace */}
-          <main className="flex-1 grid grid-cols-2 gap-4 content-start">
+          <main className="flex-1 min-w-0">
+            {activeSubTab === "GIS Map" && (
+              <PropertyGISTab address={DEMO_ADDRESS} />
+            )}
+            {activeSubTab !== "GIS Map" && (
+            <div className="grid grid-cols-2 gap-4 content-start">
             <Card title="Property Information">
               <DataRow label="Zoning" value="R-1" />
               <DataRow label="Lot Size" value="0.25 acres" />
@@ -319,6 +407,8 @@ export default function PropertyChart() {
                 </span>
               </div>
             </Card>
+            </div>
+            )}
           </main>
         </div>
       </div>

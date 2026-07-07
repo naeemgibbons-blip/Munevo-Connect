@@ -181,13 +181,15 @@ export default function LegislativePortal() {
                           {matter.action_type}
                         </span>
                       )}
+                      {matter.classification && (
                       <span
                         className={`text-xs px-1.5 py-0.5 rounded border ${
-                          CLASSIFICATION_COLORS[matter.classification]
+                          CLASSIFICATION_COLORS[matter.classification] ?? ""
                         }`}
                       >
                         {matter.classification.replace("_", " ")}
                       </span>
+                      )}
                       {matter.matter_type && (
                         <span className="text-xs text-slate-400">
                           {matter.matter_type}
