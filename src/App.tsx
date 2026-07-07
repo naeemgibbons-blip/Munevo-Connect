@@ -4,6 +4,7 @@ import BusinessChart from "./pages/BusinessChart";
 import AgendaSync from "./pages/admin/AgendaSync";
 import PropertyDispositions from "./pages/PropertyDispositions";
 import DepartmentBudgets from "./pages/DepartmentBudgets";
+import LegislativePortal from "./pages/LegislativePortal";
 
 function Nav() {
   return (
@@ -38,6 +39,12 @@ function Nav() {
       >
         Department Budgets
       </Link>
+      <Link
+        to="/legislative-portal"
+        className="px-2 py-1 rounded text-slate-300 hover:text-white"
+      >
+        Legislative Portal
+      </Link>
     </div>
   );
 }
@@ -53,6 +60,7 @@ function App() {
         <Route path="/admin/agenda-sync" element={<AgendaSync />} />
         <Route path="/property-dispositions" element={<PropertyDispositions />} />
         <Route path="/department-budgets" element={<DepartmentBudgets />} />
+        <Route path="/legislative-portal" element={<LegislativePortal />} />
       </Routes>
     </BrowserRouter>
   );

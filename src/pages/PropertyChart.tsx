@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, DataRow, StatusBadge, ActivityRow } from "../components/chart-ui";
+import { supabase } from "../integrations/supabase/client";
+import type { LegistarMatter } from "../integrations/supabase/types";
 
 type RecordTab = {
   id: string;
@@ -61,6 +63,49 @@ function BillRow({
         </button>
       </div>
     </div>
+  );
+}
+
+// Hardcoded address for the demo property record.
+const DEMO_ADDRESS = "123 Main St";
+
+function PendingCouncilActions({ address }: { address: string }) {
+  const [items, setItems] = useState<LegistarMatter[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("legistar_matters")
+      .select("id, matter_file, action_type, parsed_fields")
+      .eq("matter_category", "ACTIONABLE")
+      .contains("extracted_addresses", JSON.stringify([address]))
+      .limit(5)
+      .then(({ data }) => setItems(data ?? []));
+  }, [address]);
+
+  if (items.length === 0) return null;
+
+  return (
+    <Card title="Pending Council Actions">
+      <div className="flex flex-col gap-2">
+        {items.map((item) => (
+          <div key={item.id} className="rounded border border-amber-200 bg-amber-50 px-3 py-2">
+            <div className="flex items-center gap-2 mb-0.5">
+              {item.matter_file && (
+                <span className="text-xs font-mono font-semibold text-amber-800">
+                  {item.matter_file}
+                </span>
+              )}
+              {item.action_type && (
+                <span className="text-xs text-amber-700 font-medium">{item.action_type}</span>
+              )}
+            </div>
+            <p className="text-xs text-amber-900 leading-snug">
+              {item.parsed_fields?.["Purpose"] ?? "Pending legislative action"}
+            </p>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 
@@ -251,6 +296,8 @@ export default function PropertyChart() {
               <BillRow label="Sewer Balance" balance="$38.10" due="06/05/2025" />
               <BillRow label="Trash Balance" balance="$22.75" due="06/05/2025" />
             </Card>
+
+            <PendingCouncilActions address={DEMO_ADDRESS} />
 
             <Card title="Next Inspection" onViewAll={() => {}} viewAllLabel="View all inspections">
               <div className="flex items-center justify-between mb-3">

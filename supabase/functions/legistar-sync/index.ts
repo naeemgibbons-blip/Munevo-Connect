@@ -1,9 +1,15 @@
-// Edge function: syncs Newark Legistar matters into legistar_matters and
-// classifies/upserts them into property_dispositions or grants.
-// Triggered by the admin "Agenda sync" page.
+// Edge function: syncs Newark Legistar matters into legistar_matters.
+// Filters out PROCEDURAL and HEADER items; only saves ACTIONABLE ones with
+// structured extraction. Runs the relationship engine to populate
+// legistar_matter_links against properties, parcels, business_licenses,
+// contractor_profiles, grants, and departments.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { parseMatterTitle } from "../_shared/legistar-parser.ts";
+import {
+  classifyMatter,
+  extractStructuredFields,
+  parseMatterTitle,
+} from "../_shared/legistar-parser.ts";
 
 const LEGISTAR_MATTERS_URL = "https://webapi.legistar.com/v1/newark/matters";
 const ALLOWED_ROLES = ["admin", "executive", "staff", "supervisor"];
@@ -16,12 +22,122 @@ type LegistarApiMatter = {
   MatterStatusName: string | null;
 };
 
+type LinkCandidate = {
+  legistar_matter_id: string;
+  org_id: string;
+  record_type: string;
+  record_id: string | null;
+  match_basis: string;
+  match_text: string;
+  confidence: "high" | "medium" | "low" | "needs_review";
+  status: "pending";
+};
+
 function parseAmount(value: string | undefined): number | null {
   if (!value) return null;
   const cleaned = value.replace(/[^0-9.]/g, "");
   if (!cleaned) return null;
-  const amount = Number.parseFloat(cleaned);
-  return Number.isFinite(amount) ? amount : null;
+  const n = Number.parseFloat(cleaned);
+  return Number.isFinite(n) ? n : null;
+}
+
+// deno-lint-ignore no-explicit-any
+type Db = ReturnType<typeof createClient<any>>;
+
+async function buildLinks(
+  db: Db,
+  orgId: string,
+  matterId: string,
+  extracted: ReturnType<typeof extractStructuredFields>
+): Promise<LinkCandidate[]> {
+  const links: LinkCandidate[] = [];
+
+  const push = (
+    record_type: string,
+    record_id: string | null,
+    match_basis: string,
+    match_text: string,
+    confidence: LinkCandidate["confidence"]
+  ) => links.push({ legistar_matter_id: matterId, org_id: orgId, record_type, record_id, match_basis, match_text, confidence, status: "pending" });
+
+  // ── addresses → properties + parcels ──────────────────────────────────────
+  for (const addr of extracted.addresses) {
+    const [{ data: props }, { data: parcels }] = await Promise.all([
+      db.from("properties").select("id").eq("org_id", orgId).ilike("address", `%${addr}%`).limit(5),
+      db.from("parcels").select("id").eq("org_id", orgId).ilike("address", `%${addr}%`).limit(5),
+    ]);
+
+    if (props?.length) {
+      for (const p of props) push("property", p.id, "address", addr, "high");
+    } else {
+      push("property", null, "address", addr, "needs_review");
+    }
+
+    for (const p of (parcels ?? [])) push("parcel", p.id, "address", addr, "high");
+  }
+
+  // ── parcel refs → parcels ─────────────────────────────────────────────────
+  for (const ref of extracted.parcels) {
+    const blockLotMatch = ref.match(/Block\s+(\d+)\s+Lot\s+(\d+)/i);
+    if (!blockLotMatch) continue;
+    const parcelNumber = `${blockLotMatch[1]}-${blockLotMatch[2]}`;
+    const { data: parcels } = await db
+      .from("parcels")
+      .select("id")
+      .eq("org_id", orgId)
+      .ilike("parcel_number", `%${parcelNumber}%`)
+      .limit(3);
+    if (parcels?.length) {
+      for (const p of parcels) push("parcel", p.id, "parcel_number", ref, "high");
+    } else {
+      push("parcel", null, "parcel_number", ref, "needs_review");
+    }
+  }
+
+  // ── businesses → business_licenses ───────────────────────────────────────
+  for (const name of extracted.businesses) {
+    const { data: biz } = await db
+      .from("business_licenses")
+      .select("id")
+      .eq("org_id", orgId)
+      .ilike("business_name", `%${name}%`)
+      .limit(3);
+    if (biz?.length) {
+      for (const b of biz) push("business_license", b.id, "name", name, "medium");
+    } else {
+      push("business_license", null, "name", name, "needs_review");
+    }
+  }
+
+  // ── contractors → contractor_profiles ────────────────────────────────────
+  for (const name of extracted.contractors) {
+    const { data: ctrs } = await db
+      .from("contractor_profiles")
+      .select("id")
+      .eq("org_id", orgId)
+      .ilike("business_name", `%${name}%`)
+      .limit(3);
+    if (ctrs?.length) {
+      for (const c of ctrs) push("contractor", c.id, "name", name, "medium");
+    } else {
+      push("contractor", null, "name", name, "needs_review");
+    }
+  }
+
+  // ── funding source → grants ───────────────────────────────────────────────
+  if (extracted.fundingSource) {
+    const { data: grants } = await db
+      .from("grants")
+      .select("id")
+      .eq("org_id", orgId)
+      .ilike("source", `%${extracted.fundingSource}%`)
+      .limit(3);
+    for (const g of (grants ?? [])) {
+      push("grant", g.id, "funding_source", extracted.fundingSource, "medium");
+    }
+  }
+
+  return links;
 }
 
 Deno.serve(async (req) => {
@@ -79,21 +195,19 @@ Deno.serve(async (req) => {
   let scanned = 0;
   let imported = 0;
   let skipped = 0;
-  let ignored = 0;
+  let ignored = 0; // PROCEDURAL + HEADER
   let departmentsCreated = 0;
   const departmentCache = new Map<string, string>();
 
   async function findOrCreateDepartment(name: string | undefined): Promise<string | null> {
-    if (!name) return null;
+    if (!name?.trim()) return null;
     const trimmed = name.trim();
-    if (!trimmed) return null;
-
     const cacheKey = trimmed.toLowerCase();
     if (departmentCache.has(cacheKey)) return departmentCache.get(cacheKey)!;
 
     const { data: existing } = await db
       .from("departments")
-      .select("id, name")
+      .select("id")
       .eq("org_id", orgId)
       .ilike("name", trimmed)
       .maybeSingle();
@@ -123,7 +237,16 @@ Deno.serve(async (req) => {
       continue;
     }
 
+    // ── Classification filter ─────────────────────────────────────────────
+    const category = classifyMatter(matter);
+    if (category !== "ACTIONABLE") {
+      ignored += 1;
+      continue;
+    }
+
     const parsed = parseMatterTitle(matter.MatterTitle);
+    const extracted = extractStructuredFields(parsed.fields, matter.MatterTitle);
+
     const departmentId = await findOrCreateDepartment(
       parsed.fields["Dept/Agency"] ?? parsed.fields["Monitoring Dept/Agency"]
     );
@@ -149,6 +272,18 @@ Deno.serve(async (req) => {
           parsed_fields: parsed.fields,
           classification: parsed.classification,
           synced_at: new Date().toISOString(),
+          // Structured extraction columns
+          matter_category: category,
+          action_type: extracted.actionType,
+          resolution_number: extracted.resolutionNumber,
+          ordinance_number: extracted.ordinanceNumber,
+          funding_source_parsed: extracted.fundingSource,
+          meeting_body: extracted.meetingBody,
+          extracted_addresses: extracted.addresses.length ? extracted.addresses : null,
+          extracted_businesses: extracted.businesses.length ? extracted.businesses : null,
+          extracted_contractors: extracted.contractors.length ? extracted.contractors : null,
+          extracted_parcels: extracted.parcels.length ? extracted.parcels : null,
+          extracted_amounts: extracted.amounts.length ? extracted.amounts : null,
         },
         { onConflict: "org_id,matter_id" }
       )
@@ -166,6 +301,7 @@ Deno.serve(async (req) => {
       imported += 1;
     }
 
+    // ── Module-specific records ───────────────────────────────────────────
     if (parsed.classification === "property_disposition") {
       const property = parsed.properties[0];
       await db.from("property_dispositions").upsert(
@@ -199,6 +335,14 @@ Deno.serve(async (req) => {
         },
         { onConflict: "legistar_matter_id" }
       );
+    }
+
+    // ── Relationship engine ───────────────────────────────────────────────
+    const links = await buildLinks(db, orgId, upsertedMatter.id, extracted);
+    if (links.length > 0) {
+      await db
+        .from("legistar_matter_links")
+        .upsert(links, { onConflict: "legistar_matter_id,record_type,match_text" });
     }
   }
 

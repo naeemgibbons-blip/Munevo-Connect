@@ -17,9 +17,35 @@ export type LegistarMatter = {
   matter_type: string | null;
   matter_status: string | null;
   department_id: string | null;
-  parsed_fields: Record<string, unknown> | null;
+  parsed_fields: Record<string, string> | null;
   classification: "grant" | "property_disposition" | "other";
   synced_at: string;
+  matter_category: "PROCEDURAL" | "HEADER" | "ACTIONABLE" | null;
+  action_type: string | null;
+  resolution_number: string | null;
+  ordinance_number: string | null;
+  funding_source_parsed: string | null;
+  meeting_body: string | null;
+  extracted_addresses: string[] | null;
+  extracted_businesses: string[] | null;
+  extracted_contractors: string[] | null;
+  extracted_parcels: string[] | null;
+  extracted_amounts: string[] | null;
+};
+
+export type LegistarMatterLink = {
+  id: string;
+  org_id: string;
+  legistar_matter_id: string;
+  record_type: string;
+  record_id: string | null;
+  match_basis: string;
+  match_text: string;
+  confidence: "high" | "medium" | "low" | "needs_review";
+  status: "pending" | "confirmed" | "rejected";
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
 };
 
 export type PropertyDisposition = {
